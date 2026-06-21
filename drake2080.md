@@ -68,3 +68,67 @@ Drake's optimization frontend.
 ## One-line takeaway
 Internalize **System / Context / Diagram + MultibodyPlant + MathematicalProgram**,
 and the rest is lookup.
+
+---
+
+# Underactuated — The 80/20
+
+Thin scaffolding on top of Drake from Tedrake's MIT course. Once you know what each
+piece does, it gets out of your way.
+
+> Mental model: **`underactuated` finds your models and configures your environment.
+> Drake does the actual work.**
+
+---
+
+## 1. `running_as_notebook`
+A boolean. `True` inside Jupyter/Deepnote, `False` when running as a plain `.py`.
+
+Used to gate interactive loops:
+```python
+if running_as_notebook:
+    while meshcat.GetButtonClicks("Stop") < 1:
+        simulator.AdvanceTo(...)
+else:
+    simulator.AdvanceTo(5.0)   # just run and exit
+```
+
+You'll see this pattern in almost every notebook. When running locally, the `else`
+branch fires — no hanging button-wait.
+
+## 2. `ConfigureParser`
+Sets up the URDF/SDFormat search paths so `Parser` can find the course's bundled
+models (cart-pole, acrobot, double pendulum, etc.) by short name.
+
+```python
+parser = Parser(plant)
+ConfigureParser(parser)
+parser.AddModelsFromUrl("package://underactuated/models/cartpole.urdf")
+```
+
+Without this, `Parser` won't know where the course model files live and will throw
+a file-not-found error. Call this at diagram setup time.
+
+## 3. `MeshcatSliders` (from `underactuated.meshcat_utils`)
+Adds interactive sliders to the Meshcat browser UI — useful for tuning parameters
+(gains, setpoints) live without restarting the simulation.
+
+```python
+from underactuated.meshcat_utils import MeshcatSliders
+sliders = MeshcatSliders(meshcat, {"Q": (0.1, 100.0, 1.0)})
+```
+
+Reach for it when you want interactive tuning; not needed just to get things running.
+
+---
+
+## The long tail (defer — look up when needed)
+- `underactuated.jupyter_utils` — notebook display helpers, irrelevant outside Jupyter
+- `underactuated.scenarios` — pre-built diagram factories for course homeworks
+- `underactuated.plot_utils` — phase portrait / trajectory plot helpers
+
+---
+
+## One-line takeaway
+`underactuated` gives you **`ConfigureParser`** (finds the models) and
+**`running_as_notebook`** (gates interactive behavior). That's 90% of why it's imported.
